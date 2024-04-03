@@ -11,11 +11,15 @@ Start the Streamlit graphical interface with the command:
 
 Use the Streamlit graphical interface to access all project functionalities:
 
-Dataset Preprocessing.
-Train models using Pycaret with tracking done by MLflow.
-Model evaluation with validation dataset (optional).
-Check model health with or without validation dataset (optional).
-Use the model to make predictions with a dataset with or without a target column.
+1.Dataset Preprocessing.
+
+2.Train models using Pycaret with tracking done by MLflow.
+
+3.Model evaluation with validation dataset (optional).
+
+4.Check model health with or without validation dataset (optional).
+
+5.Use the model to make predictions with a dataset with or without a target column.
 
 Português:
 
