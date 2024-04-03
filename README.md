@@ -2,6 +2,7 @@
 Projeto Disciplina Engenharia de Machine Learning Infnet
 
 English:
+
 Initialize MLflow tracking with the command:
 "mlflow ui --backend-store-uri sqlite:///Models/mlruns.db"
 
@@ -17,6 +18,7 @@ Check model health with or without validation dataset (optional).
 Use the model to make predictions with a dataset with or without a target column.
 
 Português:
+
 Inicialize o tracking do MLflow com o comando:
 "mlflow ui --backend-store-uri sqlite:///Models/mlruns.db"
 
