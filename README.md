@@ -35,5 +35,5 @@ Use a Interface gráfica so Streamlit para acessar todas as funcionalidades do p
 
 4.Verificar saúde do modelo com ou sem dataset de validação(opcional).
 
-5.Utilizar modelo para fazer previsão com Dataset com ou sem coluna alvo.
+5.Utilizar modelo para fazer previsão de Dataset com ou sem coluna alvo.
 
