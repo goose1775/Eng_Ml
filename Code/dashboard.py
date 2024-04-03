@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-from aplicacao import train_model, eda_tab, train_model_tab, avaliacao_modelo_tab, producao_tab, serve_model, evaluate_model, data_pre_process
+from aplicacao import train_model, eda_tab, train_model_tab, avaliacao_modelo_tab, producao_tab, serve_model, evaluate_model, data_pre_process, saude_model_tab
 from lists import models_map_class, plots_map_class
 from sklearn.metrics import accuracy_score, classification_report
 import time
@@ -16,7 +16,7 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 def main():
     
     st.title("Auto Machine Learning")
-    tabs = ["Processamento de Dados", "Treinamento do Modelo", "Avaliação do Modelo", "Aplicação do Modelo"]
+    tabs = ["Processamento de Dados", "Treinamento do Modelo", "Avaliação do Modelo", "Saúde do Modelo", "Aplicação do Modelo"]
     selected_tab = st.sidebar.radio("Guia:", tabs)
 
     if selected_tab == "Processamento de Dados":
@@ -30,6 +30,10 @@ def main():
     if selected_tab == "Avaliação do Modelo":
         with st.spinner('Avaliando Modelo...'):
             avaliacao_modelo_tab()
+
+    if selected_tab == "Saúde do Modelo":
+        with st.spinner('Avaliando Modelo...'):
+            saude_model_tab()
         
     if selected_tab == "Aplicação do Modelo":
         with st.spinner('Aplicando Modelo...'):

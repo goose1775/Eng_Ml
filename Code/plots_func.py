@@ -93,6 +93,7 @@ def generate_plot_eda(df_clean, selected_columns, plot_type):
         elif plot_type == "Heatmap": #
             st.subheader("Heatmap")
             plt.figure(figsize=(8, 6))
+            print(df_clean)
             sns.heatmap(df_clean.corr(), annot=True, cmap='coolwarm', fmt=".2f", cbar=False)
             st.pyplot()
 
@@ -115,3 +116,66 @@ def generate_plot_eda(df_clean, selected_columns, plot_type):
             st.pyplot()
     except Exception as e:
         st.error(f"Ocorreu um erro. Verifque os atributos para plotagem: {e}")
+
+
+########################### PLOT MODEL COMPARISON ########################## 
+
+
+def plot_predictions(train_predictions, test_predictions, train_predictions_class_1, test_predictions_class_1, train_predictions_class_0, test_predictions_class_0, production_predictions_class_0, production_predictions_class_1, production_predictions):
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    import streamlit as st
+    import numpy as np
+    import scipy.stats as stats    
+    
+    # Predict linestyle='dashdot', linewidth=2
+    st.divider()
+    plt.figure(figsize=(10, 6))
+    sns.kdeplot(train_predictions, label='Train Dataset Predictions', linewidth=2)
+    sns.kdeplot(test_predictions, label='Test Dataset Predictions', linewidth=2)
+    if production_predictions is not False:
+        sns.kdeplot(production_predictions, label='Production Dataset Predictions', linewidth=2)
+    plt.title("Prediction by Class")
+    plt.xlabel("Predicted Probability")
+    plt.ylabel("Density")
+    plt.legend(loc='best')
+    plt.tight_layout()
+    st.pyplot()
+    plt.clf()
+
+    st.divider()
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("Class 1")
+        # Proba 1
+        plt.figure(figsize=(10, 6))
+        sns.kdeplot(train_predictions_class_1, label='Train Dataset Predictions (Class 1)', linewidth=2)
+        sns.kdeplot(test_predictions_class_1, label='Test Dataset Predictions (Class 1)', linewidth=2)
+        if production_predictions_class_1 is not False:
+            sns.kdeplot(production_predictions_class_1, label='Production Dataset Predictions (Class 1)', linewidth=2)
+        plt.title("Class 1")
+        plt.xlabel("Predicted Probability Class 1")
+        plt.ylabel("Density")
+        plt.legend(loc='best')
+        plt.tight_layout()
+        st.pyplot()
+        plt.clf()
+        
+    with col2:
+        st.write("Class 0")
+        # Proba 0
+        plt.figure(figsize=(10, 6))
+        sns.kdeplot(train_predictions_class_0, label='Train Dataset Predictions (Class 0)', linewidth=2)
+        sns.kdeplot(test_predictions_class_0, label='Test Dataset Predictions (Class 0)', linewidth=2)
+        if production_predictions_class_0 is not False:
+            sns.kdeplot(production_predictions_class_0, label='Production Dataset Predictions (Class 0)', linewidth=2)
+        plt.title("Class 0")
+        plt.xlabel("Predicted Probability Class 0")
+        plt.ylabel("Density")
+        plt.legend(loc='best')
+        plt.tight_layout()
+        st.pyplot()
+        plt.clf()
+
+    st.divider()
