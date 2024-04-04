@@ -21,11 +21,10 @@ def eda_tab():
         st.subheader("Visualização dos Dados Brutos")
         st.write(f"O Dataset original contém {df.shape[0]} amostras, {df.shape[1]} atributos e {df.isna().sum().sum()} valores Nulos/NA")
         st.write(df)
-
+        
         # Seleção de colunas para análise
         selected_columns = st.sidebar.multiselect("Selecionar colunas para filtragem:", options=sorted(df.columns.tolist()), default=sorted(df.columns.tolist()))
         target_col = st.sidebar.selectbox("Coluna alvo:", options=selected_columns)
-
 
         st.sidebar.subheader("Parâmetros(Dados)")
         # Realizar a limpeza de dados
@@ -59,7 +58,7 @@ def eda_tab():
             df_clean = df_clean
         try:
             # Análise Estatística Descritiva
-            st.subheader("Análise Estatística Descritiva")
+            st.subheader("Análise Estatística Descritiva")            
             st.write(df_clean.describe())
         except Exception as e:
             st.write(f"Favor escolher Colunas para Análise")
@@ -69,7 +68,11 @@ def eda_tab():
             df_clean_missing = df_clean.isnull().sum().reset_index()
             df_clean_missing = df_clean_missing.rename(columns={"index": "Colunas", 0: "N º N/A"})    
             st.subheader("Visualização de Valores Faltantes")
-            st.write(df_clean_missing)
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write(df_clean_missing)                
+            with col2:
+                st.write(df_clean.dtypes)
         except Exception as e:
             st.write(f"Favor escolher Colunas para Análise")
         
@@ -180,7 +183,7 @@ def train_model_tab():
     #
     st.sidebar.subheader("Parâmetros(Setup)")
     folds = st.sidebar.number_input("Nº Folds: ", min_value=1, max_value=50, value=10)
-    selected_fold_strategy = st.sidebar.selectbox("Método de Remoção de 'Outliers':", list(fold_strategys.keys()), index=0)
+    selected_fold_strategy = st.sidebar.selectbox("Estratédia de dobras(folds):", list(fold_strategys.keys()), index=0)
     fold_strategy = fold_strategys[selected_fold_strategy]    
     #
     st.sidebar.subheader("Parâmetros(Tuning)")
@@ -250,7 +253,7 @@ def train_model_tab():
 ############################# EVALUATE MODELO TAB ##################################
 
 def avaliacao_modelo_tab():
-    from aplicacao import serve_model, evaluate_model
+    from aplicacao import  evaluate_model
     from lists import metrics_list_eval
     import pandas as pd
     import streamlit as st
@@ -281,9 +284,9 @@ def avaliacao_modelo_tab():
     except:
         target_col = ""
     experiment_id = st.sidebar.text_input("ID do experimento avaliação:", value=experiment_id )
-    experiment_name = st.sidebar.text_input("Nome do experimento(run) avaliação:", value="")    
-    mlflow_db = st.sidebar.text_input("BD rastreamento(MLflow) do MLflow:", value="mlruns")    
-    port = st.sidebar.number_input("Porta (port):", min_value=1, max_value=65535, value=5001)
+    experiment_name = st.sidebar.text_input("Nome do experimento(run) avaliação:", value=experiment_name)    
+    mlflow_db = st.sidebar.text_input("BD rastreamento(MLflow) do MLflow:", value=mlflow_db)    
+    #port = st.sidebar.number_input("Porta (port):", min_value=1, max_value=65535, value=5001)
     
     uri_choice = st.sidebar.selectbox("Escolha run ou modelo:", ["Último run", "Modelo registrado"])
 
@@ -298,13 +301,6 @@ def avaliacao_modelo_tab():
     # Botão para aplicar o modelo
     try:
         if st.sidebar.button("Avaliar Modelo") and production_data is not None:
-            # Chama a função para servir o modelo em um processo separado
-            serve_model(model_uri, port, mlflow_db)
-    
-            # Espera alguns segundos para garantir que o servidor MLflow esteja iniciado antes de avaliar o modelo
-            import time
-            time.sleep(2)
-    
             # Avalia o modelo
             result, accuracy, classification_report_df, confusion_table, roc_auc, precision, recall, f1, mcc = evaluate_model(experiment_id, experiment_name, logged_model, production_data, target_col, mlflow_db)
     
@@ -332,11 +328,11 @@ def avaliacao_modelo_tab():
 
 ######################## HEALTH MODEL TAB #################################
 
-def saude_model_tab():
+def monitor_tab():
     import pandas as pd
     import streamlit as st
     
-    st.sidebar.title("Saúde do Modelo")
+    st.sidebar.title("Monitoramento")
     
     data_prod_choice = st.sidebar.toggle("Dataset para comparação(opcional):", value=True)
     if data_prod_choice is True:
@@ -367,7 +363,7 @@ def saude_model_tab():
     model_uri = st.sidebar.text_input("Caminho do Modelo(Uri MLflow):", f"{model_uri}")
 
     try:
-        if st.sidebar.button("Verificar Saúde"):
+        if st.sidebar.button("Verificar"):
             train_report, test_report, production_report = evaluate_and_compare_datasets(mlflow_db, model_uri, target_col, production_df)
             
             st.write("Relatório de Classificação(Treino)")
@@ -393,32 +389,49 @@ def producao_tab():
         df_producao = load_dataframe(file_to_load)            
     else:
         df_producao = ""
-        st.write("Adiconar base de dados")
+        
     try:
         columns = df_producao.columns.tolist()
     except:
         columns = "" 
 
-    alvo_bool = st.sidebar.toggle("Dataset possue alvo?(Ativo = Sim):", value=True)
+    alvo_bool = st.sidebar.toggle("Dataset possue coluna alvo?", value=True)
     if alvo_bool is True:
         target_col = st.sidebar.selectbox("Coluna alvo:", options=columns)
         
     mlflow_db = st.sidebar.text_input("BD rastreamento(MLflow):", "mlruns")
 
     try:
+        experiment_id = st.session_state.experiment_id
+        experiment_id = st.sidebar.text_input("ID do experimento:", value=experiment_id )
+    except:
+        experiment_id = st.sidebar.text_input("ID do experimento:", value="" )
+
+    try:        
+        experiment_name = st.session_state.experiment_name    
+        experiment_name = st.sidebar.text_input("Nome do experimento(run) avaliação:", value=experiment_name)  
+    except:
+        experiment_name = st.sidebar.text_input("Nome do experimento(run) avaliação:", value="")   
+        
+    try:
         model_uri = st.session_state.mlflow_model_uri 
         model_uri = format_run_uri(model_uri)
-        model_uri = st.sidebar.text_input("Caminho do Modelo(Uri MLflow):", f"{model_uri}")
+        model_uri = st.sidebar.text_input("Caminho do Modelo(Uri MLflow):", model_uri)
     except:
         model_uri = st.sidebar.text_input("Caminho do Modelo(Uri MLflow):", "")
+        
     try:
         if st.sidebar.button("Aplicar Modelo"):
             if alvo_bool is True:
-                report, acuracia = production_model_alvo(df_producao, columns, mlflow_db, target_col, model_uri)
-                st.write(f"Acurária: {acuracia}")
+                report, acuracia, precision, f1, recall, df_result = production_model_alvo(df_producao, columns, mlflow_db, target_col, model_uri, experiment_id, experiment_name)
+                st.write(f"Acurária: {acuracia:.4f}")
+                st.write(f"Precisão: {precision:.4f}")
+                st.write(f"F1-Score: {f1:.4f}")
+                st.write(f"Recall: {recall:.4f}")
                 st.write(report)
+                st.write(df_result)                
             else:
-                df_result = production_model(df_producao, mlflow_db, model_uri) 
+                df_result = production_model(df_producao, mlflow_db, model_uri, experiment_id, experiment_name) 
                 st.write(df_result)
 
     except Exception as e:
@@ -624,27 +637,7 @@ def train_model(experiment_id, experiment_name, test_size, models, parameters, c
                 
         print(">>>>>>>>>> End of run!")
     mlflow.end_run()
-    return result, train_loss, test_loss, train_f1, test_f1, base_train_size, base_test_size, leaderboard
-    
-######################## SERVE MODEL ############################################
-
-def serve_model(model_uri, port, mlflow_db):
-    import mlflow
-    from sklearn.metrics import accuracy_score, classification_report
-    import os
-    import subprocess
-    import time
-    # Set the MLFLOW_TRACKING_URI environment variable
-    os.environ['MLFLOW_TRACKING_URI'] = f"sqlite:///Models/{mlflow_db}.db"
-
-    # Create the command to serve the model
-    command = f"mlflow models serve -m {model_uri} --no-conda -p {port}"
-
-    # Execute the command using subprocess in a separate process
-    subprocess.Popen(command, shell=True)
-    
-    # Await 10 sec
-    time.sleep(2)
+    return result, train_loss, test_loss, train_f1, test_f1, base_train_size, base_test_size, leaderboard    
 
 ######################## EVALUATE MODEL #########################################
 
@@ -654,7 +647,6 @@ def evaluate_model(experiment_id, experiment_name, logged_model, production_data
     import pycaret.classification as pc
     from sklearn import metrics
     from mlflow.models.signature import infer_signature
-    from sklearn.metrics import log_loss, f1_score
     from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_curve, roc_auc_score, precision_recall_curve, f1_score, matthews_corrcoef
     
     # Configure MLflow Tracking
@@ -688,23 +680,7 @@ def evaluate_model(experiment_id, experiment_name, logged_model, production_data
         classification_report = metrics.classification_report(predictions[target_col], predictions['prediction_label'], output_dict=True)        
         classification_report_df = pd.DataFrame(classification_report)
         confusion_matrix = metrics.confusion_matrix(predictions[target_col], predictions['prediction_label'])
-
-
-         # Calculating log loss and F1-score
-        #prod_loss = log_loss(predictions[target_col], predictions['prediction_label'])
-        #prod_f1 = f1_score(predictions[target_col], predictions['prediction_label'])
-        #prod_size = production_data.shape[0]
-    
-        # Log Metrics
-        #mlflow.log_metric("Log Loss", prod_loss)
-        #mlflow.log_metric("F1-score", prod_f1)
-        #mlflow.log_metric("Dataset Size", prod_size)
-
-        parquet_file_path = "../docs/classification_report.parquet"
-        classification_report_df.to_parquet(parquet_file_path)
-            
-        mlflow.log_artifact(parquet_file_path)
-
+        
         # Create a model signature
         signature = infer_signature(X_production, predictions)
 
@@ -731,6 +707,11 @@ def evaluate_model(experiment_id, experiment_name, logged_model, production_data
             {'selector': 'th', 'props': 'display: none'},
             {'selector': 'td', 'props': 'padding: 0'}
         ])        
+
+        classification_report_df_path = "../docs/classification_report_aval.parquet"        
+        classification_report_df.to_parquet(classification_report_df_path, index=False)
+        
+        mlflow.log_artifact(classification_report_df_path)
         
     mlflow.end_run()
     return result, accuracy, classification_report_df, confusion_table, roc_auc, precision, recall, f1, mcc    
@@ -787,63 +768,107 @@ def evaluate_and_compare_datasets(mlflow_db, model_uri, target_col, production_d
         plot_predictions(train_predictions, test_predictions, train_predictions_class_1, test_predictions_class_1, train_predictions_class_0, test_predictions_class_0, production_predictions_class_0=False, production_predictions_class_1=False, production_predictions = False)
     return report_train, report_test, None  
 
-######################## SERVE PRODUCTION MODEL ###############################
+######################## DEPLOY PRODUCTION MODEL(TARGET) ###############################
 
-def production_model_alvo(df_producao, columns, mlflow_db, target_col, model_uri):
+def production_model_alvo(df_producao, columns, mlflow_db, target_col, model_uri, experiment_id, experiment_name):
     import os
     import pandas as pd
     import mlflow
     import streamlit as st
-    from sklearn.metrics import accuracy_score, classification_report
+    from sklearn.metrics import accuracy_score, classification_report, precision_score, f1_score, recall_score
     
     os.environ['MLFLOW_TRACKING_URI'] = f"sqlite:///Models/{mlflow_db}.db"
-    
-    # Carregamento do modelo
-    model = mlflow.sklearn.load_model(model_uri)
-    
-    # Carregamento do conjunto de dados
-    df = df_producao
-    
-    # Remoção da coluna alvo do conjunto de dados de produção
-    df_producao = df.drop(columns=[target_col])
-    
-    # Previsão das classes
-    classes = model.predict(df_producao)
-    
-    # Calcular a acurácia
-    acuracia = accuracy_score(df[target_col], classes)
-    print(f"Acurácia: {acuracia:.2f}")
-    
-    # Gerar o relatório de classificação
-    report = classification_report(df[target_col], classes, output_dict=True)
-    report = pd.DataFrame(report)
-    
-    # Imprimir o relatório de classificação
-    print(classification_report(df[target_col], classes))
 
-    return report, acuracia
+    # Setting experiment Name    
+    experiment_id = check_experiment_id(experiment_id)
 
-############################################################################################################
-def production_model(df_producao, mlflow_db, model_uri):
+    with mlflow.start_run(experiment_id=experiment_id, run_name=experiment_name) as run:
+    
+        # Carregamento do modelo
+        model = mlflow.sklearn.load_model(model_uri)
+        
+        # Carregamento do conjunto de dados
+        df = df_producao
+        
+        # Remoção da coluna alvo do conjunto de dados de produção
+        df_producao = df.drop(columns=[target_col])
+        
+        # Previsão das classes
+        classes = model.predict(df_producao)
+        probabilities_producao = model.predict_proba(df_producao)[:, 1]  
+    
+        # Criar um DataFrame com as previsões
+        df_predicoes = pd.DataFrame({'Previsoes': classes, 'Probabilidade_Classe_1': probabilities_producao})
+        df_result = pd.concat([df, df_predicoes], axis=1)
+        
+        # Calcular a acurácia
+        acuracia = accuracy_score(df[target_col], classes)
+        precision = precision_score(df[target_col], classes)
+        f1 = f1_score(df[target_col], classes)
+        recall = recall_score(df[target_col], classes)
+        
+        print(f"Acurácia: {acuracia:.2f}")
+        print(f"Precisão: {precision:.2f}")
+        print(f"F1-Score: {f1:.2f}")
+        print(f"Recall: {recall:.2f}")
+        
+        # Gerar o relatório de classificação
+        report = classification_report(df[target_col], classes, output_dict=True)
+        report = pd.DataFrame(report)
+        
+        report_path, df_result_path = "../docs/classification_report.parquet", "../docs/previsoes.parquet"
+        
+        df_result.to_parquet(df_result_path, index=False)
+        report.to_parquet(report_path, index=False)
+
+        mlflow.log_artifact(df_result_path)
+        mlflow.log_artifact(report_path)       
+
+        mlflow.log_metric("Acurácia",acuracia)
+        mlflow.log_metric("Precisão",precision)
+        mlflow.log_metric("F1-Score",f1)
+        mlflow.log_metric("Recall",recall)
+        
+        # Imprimir o relatório de classificação
+        print(classification_report(df[target_col], classes))
+        
+    mlflow.end_run()
+    return report, acuracia, precision, f1, recall, df_result
+
+######################## DEPLOY PRODUCTION MODEL(NO TARGET) ###############################
+def production_model(df_producao, mlflow_db, model_uri, experiment_id, experiment_name):
     import os
     import pandas as pd
     import mlflow
    
     os.environ['MLFLOW_TRACKING_URI'] = f"sqlite:///Models/{mlflow_db}.db"
-   
-    # Carregamento do modelo
-    model = mlflow.sklearn.load_model(model_uri)
-   
-    # Previsão das classes no conjunto de dados de produção
-    classes_producao = model.predict(df_producao)
-   
-    # Criar um DataFrame com as previsões
-    df_predicoes = pd.DataFrame({'Previsoes': classes_producao})
-   
-    # Adicionar as colunas originais ao DataFrame de previsões
-    df_result = pd.concat([df_producao, df_predicoes], axis=1)
-    print(df_result)
-   
+
+    experiment_id = check_experiment_id(experiment_id)
+    
+    with mlflow.start_run(experiment_id=experiment_id, run_name=experiment_name) as run:
+            
+        # Carregamento do modelo
+        model = mlflow.sklearn.load_model(model_uri)
+       
+        # Previsão das classes no conjunto de dados de produção
+        classes_producao = model.predict(df_producao)
+        probabilities_producao = model.predict_proba(df_producao)[:, 1]  
+       
+        # Criar um DataFrame com as previsões
+        df_predicoes = pd.DataFrame({'Previsoes': classes_producao, 'Probabilidade_Classe_1': probabilities_producao})
+
+        # Log Artifact
+        df_predicoes_path= "../docs/previsoes.parquet"
+        df_predicoes.to_parquet(df_predicoes_path, index=False)
+        mlflow.log_artifact(df_predicoes_path)
+    
+       
+        # Adicionar as colunas originais ao DataFrame de previsões
+        df_result = pd.concat([df_producao, df_predicoes], axis=1)
+        
+        print(df_result)
+        
+    mlflow.end_run()
     return df_result
 
     

@@ -9,7 +9,16 @@ def generate_plot_eda(df_clean, selected_columns, plot_type):
             st.subheader("Histogram")
             x_attr = st.sidebar.selectbox("Selecionar coluna para eixo x:", options=selected_columns)
             plt.figure(figsize=(8, 6))
-            sns.histplot(data=df_clean, x=x_attr, kde=False)
+            test_df = pd.read_parquet("../Data/processed/base_test.parquet")
+            train_df = pd.read_parquet("../Data/processed/base_train.parquet")
+            xmin_test, xmax_test = test_df[x_attr].min(), test_df[x_attr].max()  
+            xmin_train, xmax_test = train_df[x_attr].min(), train_df[x_attr].max()  
+
+            hist1 = sns.histplot(data=train_df, x=x_attr, kde=True, label='Treinamento')
+            hist2 = sns.histplot(data=test_df, x=x_attr, kde=True, label='Teste')
+            hist1.set(xlim=(xmin_test, 3))
+            hist2.set(xlim=(xmin_train, 3)) 
+            plt.legend()
             st.pyplot()
 
         elif plot_type == "Violin Plot": 
@@ -61,12 +70,14 @@ def generate_plot_eda(df_clean, selected_columns, plot_type):
         elif plot_type == "Distribuição": 
             st.subheader("Distribuição")
             x_attr = st.sidebar.selectbox("Selecionar coluna para eixo x:", options=selected_columns, index=None)
-            y_attr = st.sidebar.selectbox("Selecionar coluna para eixo y:", options=selected_columns, index=None)
             hue_attr = st.sidebar.selectbox("Selecionar coluna para 'hue':", options=selected_columns, index=None)
             col_attr = st.sidebar.selectbox("Selecionar coluna para 'col':", options=selected_columns, index=None)
             kind = st.sidebar.selectbox("Selecionar tipo de gráfico ('kind'):", options=["hist", "kde", ], index=0)
             plt.figure(figsize=(8, 6))
-            sns.displot(data=df_clean, x=x_attr, hue=hue_attr, col=col_attr, kind=kind, common_norm=True, fill=True, linewidth=2, palette="crest", alpha=.7, multiple="stack", )
+            disp = sns.displot(data=df_clean, x=x_attr, hue=hue_attr, col=col_attr, kind=kind, common_norm=True, fill=True, linewidth=2, palette="crest", alpha=.7, multiple="stack")
+            xmin = df_clean[x_attr].min() 
+            xmax = df_clean[x_attr].max() 
+            #disp.set(xlim=(xmin, 2)) 
             st.pyplot()
 
         elif plot_type == "Relacional": 
